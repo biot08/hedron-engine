@@ -209,7 +209,7 @@ class Roller:
     return f"{' '.join([f'[{x}]' for x in rolled_faces])}"
 
 if __name__ == "__main__":
-  roller = Roller()
+  roller = Roller(1)
   print("Percentile:")
   print(roller.d_roll(10, "%%"))
   print(roller.d_roll(5, "%%%"))
@@ -255,3 +255,8 @@ if __name__ == "__main__":
   print("Addition")
   print(roller.math(res, 3, '+'))
   print(roller.math(5,3, '+'))
+
+  print("Implode and explode")
+  print(roller.d_roll(10, 4, '+', '-'))
+  print("Dot implode and explode")
+  print(roller.d_roll(10,4, '.', '+', '-'))

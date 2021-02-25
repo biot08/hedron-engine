@@ -1,13 +1,16 @@
 import re
 
 class Parser:
-  def __init__(self, tokenizer):
-    self.tokenizer = tokenizer
+  def __init__(self, token_generator, symbol_table):
+    self.token_generator = token_generator
+    self.symbol_table = symbol_table
+    self.tokenizer = None
     self.token = None
-    self.advance()
-
+    
   def parse(self, program):
-    pass
+    self.tokenizer = self.token_generator(program, self.symbol_table)
+    self.advance()
+    return self.next()
 
   def next(self, rbp=0):
     "Consumes and processes the next symbol"

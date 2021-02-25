@@ -1,7 +1,7 @@
 import re
 from Parser import SymbolTable
 
-def math_tokenize(program, symbol_table):
+def math_token_gen(program, symbol_table):
   token_pat = re.compile(r"\s*(?:(6a|%{1,3}|F|\d+)|(\*\*|>=|<=|!=|==|.))")
   for number, operator in token_pat.findall(program):
     if number:
