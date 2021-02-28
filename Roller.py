@@ -117,17 +117,20 @@ class Roller:
     return (values, dice_text)
 
   def detonate(self, value, seq, modifiers):
+    """Handles dice explosions and implosions, penetrating and non-penetrating (the .,-,+,* modifiers)"""
     acc = [value]
     report = [f"{value}"]
     min_val = min(list(seq))
     max_val = max(list(seq))
 
+    "Note that (if *) returns early, while (if +) falls through to (if -); this is intentional"
     if '*' in modifiers:
       while acc[-1] == max_val:
         new_value = self.general_roll(1,seq)[0][0]
         acc += [new_value]
         report.append(f"{new_value}")
       return(acc, report)
+
     if '+' in modifiers and acc[0] == max_val:
       while acc[-1] >= max_val - 1 if '.' in modifiers else acc[-1] == max_val:
         new_value = self.general_roll(1,seq)[0][0]
@@ -143,48 +146,10 @@ class Roller:
         new_value = new_value - 1 if '.' in modifiers else new_value
         acc += [new_value]
       acc = [(-1 * x) for x in acc]
-      "Creates the dice text report for imploding dice, such that imploding 4s resulting in 1,4,4,2 will become 0-4-4-2"
-      report = [f"{''.join(str(x) for x in acc)}={sum(acc)}"]
+      "Creates the dice text report for imploding dice, such that imploding 4s resulting in 1,4,4,2 will become 0-4-4-2=-10"
+      report = [f"{acc[0]}" + f"{''.join(str(x) if x != 0 else '-0' for x in acc[1:])}={sum(acc)}"]
       acc = [sum(acc)]
     return (acc, report)
-
-  def explode(self, value, max_val, seq):
-    acc = [value]
-    while acc[-1] == max_val:
-      # If I know it's normalized, can handle that here
-      acc += [self.general_roll(1, seq)[0][0]]
-    return acc # consider returning (finalValue, report_fragment)
-
-  def explode_dot(self, exploded_add_seq):
-    """This expects to receive a list of lists of already exploded dice rolls"""
-    accumulator = []
-    for dice_result in exploded_add_seq:
-      if len(dice_result) == 1:
-        accumulator += [dice_result]
-      else:
-        "Concat the first value in dice_result with the remainder values all -1"
-        accumulator += [[dice_result[0]] + [(x - 1) for x in dice_result[1:]]]
-    return accumulator
-  
-  def implode(self, value, min_val, max_val, seq):
-    acc = [value]
-    if acc[0] != min_val:
-      return acc
-    acc = [0, self.general_roll(1,seq)[0][0] * -1]
-    while acc[-1] == (-1 * max_val):
-      acc += [self.general_roll(1,seq)[0][0] * -1]
-    return acc
-
-  def implode_dot(self, imploded_seq):
-    """This expects to receive a list of lists of already imploded dice rolls"""
-    accumulator = []
-    for dice_result in imploded_seq:
-      if len(dice_result) <= 2:
-        accumulator += [dice_result]
-      else:
-        "Concat the first two values in dice_result with the remainder values all +1"
-        accumulator += [dice_result[:2] + [(x + 1) for x in dice_result[2:]]]
-    return accumulator
 
   def get_value(self, input):
     """If given a tuple of (dice-value-sequence, str) returns sum(dice-value-sequence); else just returns the input unmodified"""
@@ -202,34 +167,15 @@ class Roller:
     """Returns an array of the results of picking a (quantity) number of random values from the given sequence"""
     rolled_faces = choices(list(seq), k=quantity)
 
-    "This if-block handles + .+ and * explosions"
-    if modifiers and ('+' or '*' in modifiers):
-      max_val = max(list(seq))
-      accumulator = [self.explode(x, max_val, seq) for x in rolled_faces]
-      if '*' in modifiers:
-        values = [y for x in accumulator for y in x]
-        dice_text = f"{self.dice_reporter(values)}"
-        return (values, dice_text)
-      if '.' in modifiers:
-        accumulator = self.explode_dot(accumulator)
-      if '+' in modifiers:
-        values = [sum(x) for x in accumulator]
-        "Creates the dice text report for exploding dice, such that exploding 4s resulting in 4,4,2 will become 4+4+2=10"
-        report = [f"{'+'.join(str(y) for y in x)}={sum(x)}" if len(x) > 1 else x[0] for x in accumulator]
-        dice_text = f"{self.dice_reporter(report)}"
-        return (values, dice_text)
-
-    if modifiers and ('-' in modifiers):
-      min_val = min(list(seq))
-      max_val = max(list(seq))
-      accumulator = [self.implode(x, min_val, max_val, seq) for x in rolled_faces]
-      if '.' in modifiers:
-        accumulator = self.implode_dot(accumulator)
-      values = [sum(x) for x in accumulator]
-      "Creates the dice text report for imploding dice, such that imploding 4s resulting in 1,4,4,2 will become 0-4-4-2"
-      report = [f"{str(x[0]) + ''.join(str(y) if y != 0 else '-0' for y in x[1:])}={sum(x)}" if len(x) > 1 else x[0] for x in accumulator]
-      dice_text = f"{self.dice_reporter(report)}"
-      return (values, dice_text)
+    if modifiers and ('+' or '*' or '-' in modifiers):
+      values = []
+      dice_text = []
+      for die in rolled_faces:
+        value, report = self.detonate(die, seq, modifiers)
+        values += value
+        dice_text += report
+      report = f"{self.dice_reporter(dice_text)}"
+      return (values, report)
 
     if isinstance(seq, dict):
       values = [seq[x] for x in rolled_faces]
@@ -253,15 +199,15 @@ if __name__ == "__main__":
   print("Averaging:")
   print(roller.d_roll(10,'6a'))
   print("Explosion test:")
-  print(roller.d_roll(10,4,'+'))
+  print(roller.d_roll(40,4,'+'))
   print("Dot explosion test:")
-  print(roller.d_roll(10,4,'+','.'))
+  print(roller.d_roll(40,4,'+','.'))
   print("Star explosion test:")
-  print(roller.d_roll(10,4,'*'))
+  print(roller.d_roll(40,4,'*'))
   print("Implosion test:")
-  print(roller.d_roll(10,4,'-'))
+  print(roller.d_roll(40,4,'-'))
   print("Dot implosion test:")
-  print(roller.d_roll(10,4,'.', '-'))
+  print(roller.d_roll(40,4,'.', '-'))
   print("Z rolls")
   print("General:")
   print(roller.z_roll(10,4))
@@ -288,8 +234,3 @@ if __name__ == "__main__":
   print("Addition")
   print(roller.math(res, 3, '+'))
   print(roller.math(5,3, '+'))
-
-  print("Implode and explode")
-  print(roller.d_roll(10, 4, '+', '-'))
-  print("Dot implode and explode")
-  print(roller.d_roll(10,4, '.', '+', '-'))
