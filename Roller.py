@@ -116,11 +116,44 @@ class Roller:
     dice_text = f"{self.dice_reporter(report)}"
     return (values, dice_text)
 
+  def detonate(self, value, seq, modifiers):
+    acc = [value]
+    report = [f"{value}"]
+    min_val = min(list(seq))
+    max_val = max(list(seq))
+
+    if '*' in modifiers:
+      while acc[-1] == max_val:
+        new_value = self.general_roll(1,seq)[0][0]
+        acc += [new_value]
+        report.append(f"{new_value}")
+      return(acc, report)
+    if '+' in modifiers and acc[0] == max_val:
+      while acc[-1] >= max_val - 1 if '.' in modifiers else acc[-1] == max_val:
+        new_value = self.general_roll(1,seq)[0][0]
+        new_value = new_value - 1 if '.' in modifiers else new_value
+        acc += [new_value]
+      report = [f"{'+'.join(str(x) for x in acc)}={sum(acc)}"]
+      acc = [sum(acc)]
+    if '-' in modifiers and acc[0] == min_val:
+      acc = [0]
+      acc.append(self.general_roll(1,seq)[0][0])
+      while acc[-1] >= max_val -1 if '.' in modifiers else acc[-1] == max_val:
+        new_value = self.general_roll(1,seq)[0][0]
+        new_value = new_value - 1 if '.' in modifiers else new_value
+        acc += [new_value]
+      acc = [(-1 * x) for x in acc]
+      "Creates the dice text report for imploding dice, such that imploding 4s resulting in 1,4,4,2 will become 0-4-4-2"
+      report = [f"{''.join(str(x) for x in acc)}={sum(acc)}"]
+      acc = [sum(acc)]
+    return (acc, report)
+
   def explode(self, value, max_val, seq):
     acc = [value]
     while acc[-1] == max_val:
+      # If I know it's normalized, can handle that here
       acc += [self.general_roll(1, seq)[0][0]]
-    return acc
+    return acc # consider returning (finalValue, report_fragment)
 
   def explode_dot(self, exploded_add_seq):
     """This expects to receive a list of lists of already exploded dice rolls"""
@@ -173,6 +206,10 @@ class Roller:
     if modifiers and ('+' or '*' in modifiers):
       max_val = max(list(seq))
       accumulator = [self.explode(x, max_val, seq) for x in rolled_faces]
+      if '*' in modifiers:
+        values = [y for x in accumulator for y in x]
+        dice_text = f"{self.dice_reporter(values)}"
+        return (values, dice_text)
       if '.' in modifiers:
         accumulator = self.explode_dot(accumulator)
       if '+' in modifiers:
@@ -180,10 +217,6 @@ class Roller:
         "Creates the dice text report for exploding dice, such that exploding 4s resulting in 4,4,2 will become 4+4+2=10"
         report = [f"{'+'.join(str(y) for y in x)}={sum(x)}" if len(x) > 1 else x[0] for x in accumulator]
         dice_text = f"{self.dice_reporter(report)}"
-        return (values, dice_text)
-      if '*' in modifiers:
-        values = [y for x in accumulator for y in x]
-        dice_text = f"{self.dice_reporter(values)}"
         return (values, dice_text)
 
     if modifiers and ('-' in modifiers):
