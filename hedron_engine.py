@@ -1,7 +1,7 @@
-from Parser import Parser
-from DiceSymbols import dice_symbol_table, dice_token_gen
-from Lis import Environment, standard_env, exec
-from Roller import Roller
+from parser import Parser
+from dice_symbols import dice_symbol_table, dice_token_gen
+from lis import Environment, standard_env, exec
+from roller import Roller
 
 roller = Roller()
 parser = Parser(dice_token_gen, dice_symbol_table())
