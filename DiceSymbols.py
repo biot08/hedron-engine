@@ -1,5 +1,5 @@
 import re
-from parser import SymbolTable
+from Parser import SymbolTable
 
 def dice_token_gen(program, symbol_table):
   token_pat = re.compile(r"\s*(?:(6a|%{2,3}|F|\d+)|(/-|/\+|>=|<=|!=|==|.))")

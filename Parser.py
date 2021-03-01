@@ -1,6 +1,6 @@
 import re
 
-class parser:
+class Parser:
   def __init__(self, token_generator, symbol_table):
     self.token_generator = token_generator
     self.symbol_table = symbol_table

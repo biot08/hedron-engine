@@ -1,12 +1,12 @@
-from parser import parser
-from dice_symbols import dice_symbol_table, dice_token_gen
-from lis import environment, standard_env, exec
-from roller import roller
+from Parser import Parser
+from DiceSymbols import dice_symbol_table, dice_token_gen
+from Lis import Environment, standard_env, exec
+from Roller import Roller
 
-roller = roller()
-parser = parser(dice_token_gen, dice_symbol_table())
+roller = Roller()
+parser = Parser(dice_token_gen, dice_symbol_table())
 def dice_env():
-  env = environment((), (), standard_env())
+  env = Environment((), (), standard_env())
   env.update({
     'd': roller.d_roll,
     'z': roller.z_roll,

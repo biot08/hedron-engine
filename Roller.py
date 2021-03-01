@@ -2,7 +2,7 @@ import sys
 import operator
 from random import choices, seed
 
-class roller:
+class Roller:
   dice_sets = {
     "%": { f"{x}":x for x in range(0,10) },
     "%%": { f"{x}0":(x * 10) for x in range(0,10) },
@@ -216,7 +216,7 @@ class roller:
     return f"{' '.join([f'[{x}]' for x in rolled_faces])}"
 
 if __name__ == "__main__":
-  roller = roller(1)
+  roller = Roller(1)
   print("Percentile:")
   print(roller.d_roll(10, "%%"))
   print(roller.d_roll(5, "%%%"))
