@@ -2,7 +2,7 @@ import math
 import operator as op
 import sys
 
-class Environment(dict):
+class environment(dict):
   def __init__(self, params=(), args=(), outer=None):
     self.update(zip(params, args))
     self.outer = outer
@@ -17,10 +17,10 @@ class Procedure(object):
     self.env = env
   
   def __call__(self, *args):
-    return eval(self.body, Environment(self.params, args, self.env))
+    return eval(self.body, environment(self.params, args, self.env))
 
 def standard_env():
-  env = Environment()
+  env = environment()
   env.update(vars(math)) # sin, cos, sqrt, pi, others
   env.update({
     "+": op.add,
