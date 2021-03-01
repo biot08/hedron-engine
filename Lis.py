@@ -1,8 +1,6 @@
 import math
 import operator as op
-# these two are just for initial testing and should be removed later
-from Parser import Parser
-from MathSymbols import math_symbol_table, math_tokenize
+import sys
 
 class Environment(dict):
   def __init__(self, params=(), args=(), outer=None):
@@ -21,9 +19,8 @@ class Procedure(object):
   def __call__(self, *args):
     return eval(self.body, Environment(self.params, args, self.env))
 
-
 def standard_env():
-  env = {}
+  env = Environment()
   env.update(vars(math)) # sin, cos, sqrt, pi, others
   env.update({
     "+": op.add,
@@ -50,7 +47,8 @@ def standard_env():
     "print": print,
     "procedure?": callable,
     "round": round,
-    "symbol?": lambda x: isinstance(x, str)
+    "symbol?": lambda x: isinstance(x, str),
+    "quit": lambda: sys.exit(0)
   })
   return env
 
@@ -77,24 +75,31 @@ def read_from_tokens(tokens):
   else:
     return atom(token)
 
-def eval(exp, env = global_env):
-  if exp is None:
-    return
-  elif isinstance(exp, str):
-    return env[exp]
-  elif isinstance(exp, (float, int)):
-    return exp
-  elif exp[0] == "if":
-    (_, test, conseq, alt) = exp
-    if_exp = (conseq if eval(test, env) else alt)
-    return eval(if_exp, env)
-  elif exp[0] == "define":
-    (_, symbol, def_exp) = exp
-    env[symbol] = eval(def_exp, env)
+def eval(s_exp, env=global_env):
+  if isinstance(s_exp, str):        # variable
+    return env.find(s_exp)[s_exp]
+  elif not isinstance(s_exp, list): # constant
+    return s_exp
+  op, *args = s_exp
+  if op == "quote":                 # quotation
+    return args[0]
+  elif op == "if":                  # conditional
+    (test, true_res, false_res) = args
+    exp = (true_res if eval(test, env) else false_res)
+    return eval(exp, env)
+  elif op == "define":              # definition
+    (symbol, exp) = args
+    env[symbol] = eval(exp, env)
+  elif op == "set!":                # assignment
+    (symbol, exp) = args
+    env.find(symbol)[symbol] = eval(exp, env)
+  elif op == "lambda":              # procedure
+    (params, body) = args
+    return Procedure(params, body, env)
   else:
-    proc = eval(exp[0], env)
-    args = [eval(arg, env) for arg in exp[1:]]
-    return proc(*args)
+    proc = eval(op, env)
+    vals = [eval(arg, env) for arg in args]
+    return proc(*vals)
 
 def atom(token):
   try: return int(token)
@@ -115,12 +120,9 @@ def repl(prompt="lis.py>"):
     if val is not None:
       print(scheme_str(val))
 
-def test(program):
-  math_tokenizer = math_tokenize(program, math_symbol_table())
-  parser = Parser(math_tokenizer)
-  sexp = str(parser.process_next_symbol())
-  print(read(sexp))
-  print(eval(read(sexp)))
+def exec(s_exp, env=global_env):
+  """Wraps read-eval for external client convenience"""
+  return eval(read(s_exp), env)
 
 if __name__ == "__main__":
   repl()

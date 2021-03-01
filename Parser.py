@@ -43,8 +43,8 @@ class AbstractSymbol:
     raise SyntaxError(f"Unknown operator {self.id}")
 
   def __repr__(self):
-    if self.id == "(literal)":
-      return f"{self.value}"
+    if self.id == "(quote)":
+      return f"(quote {self.value})"
     if self.id == "(name)":
       return f"({self.id[1:-1]} {self.value})"
     out = [self.id, self.first, self.second, self.third]
