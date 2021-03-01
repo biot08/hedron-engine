@@ -108,7 +108,10 @@ class Roller:
     }
     left_value = self.__get_value(left)
     right_value = self.__get_value(right)
-    result = ops[math_op](left_value, right_value)
+    if right_value == 0 and (math_op == '/' or math_op == '/-' or math_op == '/+'):
+      result = 0
+    else:
+      result = ops[math_op](left_value, right_value)
     report = ""
     report += "" if self.__is_simple_value(left) else f"{self.__get_report(left)}; "
     report += "" if self.__is_simple_value(right) else f"{self.__get_report(right)}; "
@@ -118,7 +121,7 @@ class Roller:
   def finalize(self, final):
     (value, report) = final
     return (sum(value), report)
-    
+
   def __percentile_roll(self, quantity, dice_set):
     """For when you want that authentic percentile dice experience"""
     values = []
